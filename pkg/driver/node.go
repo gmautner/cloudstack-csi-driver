@@ -30,9 +30,9 @@ var ValidFSTypes = map[string]struct{}{
 	FSTypeXfs:  {},
 }
 
-type nodeServer struct {
+type NodeServer struct {
 	csi.UnimplementedNodeServer
-	connector         cloud.Interface
+	connector         cloud.Cloud
 	mounter           mount.Interface
 	maxVolumesPerNode int64
 	nodeName          string
@@ -40,12 +40,12 @@ type nodeServer struct {
 }
 
 // NewNodeServer creates a new Node gRPC server.
-func NewNodeServer(connector cloud.Interface, mounter mount.Interface, options *Options) csi.NodeServer {
+func NewNodeServer(connector cloud.Cloud, mounter mount.Interface, options *Options) *NodeServer {
 	if mounter == nil {
 		mounter = mount.New()
 	}
 
-	return &nodeServer{
+	return &NodeServer{
 		connector:         connector,
 		mounter:           mounter,
 		maxVolumesPerNode: options.VolumeAttachLimit,
@@ -54,7 +54,7 @@ func NewNodeServer(connector cloud.Interface, mounter mount.Interface, options *
 	}
 }
 
-func (ns *nodeServer) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRequest) (*csi.NodeStageVolumeResponse, error) {
+func (ns *NodeServer) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRequest) (*csi.NodeStageVolumeResponse, error) {
 	logger := klog.FromContext(ctx)
 	logger.V(6).Info("NodeStageVolume: called", "args", *req)
 
@@ -193,7 +193,7 @@ func hasMountOption(options []string, opt string) bool {
 	return false
 }
 
-func (ns *nodeServer) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstageVolumeRequest) (*csi.NodeUnstageVolumeResponse, error) {
+func (ns *NodeServer) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstageVolumeRequest) (*csi.NodeUnstageVolumeResponse, error) {
 	logger := klog.FromContext(ctx)
 	logger.V(6).Info("NodeUnstageVolume: called", "args", *req)
 
@@ -253,7 +253,7 @@ func (ns *nodeServer) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstag
 	return &csi.NodeUnstageVolumeResponse{}, nil
 }
 
-func (ns *nodeServer) isMounted(ctx context.Context, target string) (bool, error) {
+func (ns *NodeServer) isMounted(ctx context.Context, target string) (bool, error) {
 	logger := klog.FromContext(ctx)
 
 	notMnt, err := ns.mounter.IsLikelyNotMountPoint(target)
@@ -280,7 +280,7 @@ func (ns *nodeServer) isMounted(ctx context.Context, target string) (bool, error
 	return !notMnt, nil
 }
 
-func (ns *nodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) { //nolint:gocyclo,gocognit
+func (ns *NodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) { //nolint:gocyclo,gocognit
 	logger := klog.FromContext(ctx)
 	logger.V(6).Info("NodePublishVolume: called", "args", *req)
 
@@ -434,7 +434,7 @@ func (ns *nodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 	return &csi.NodePublishVolumeResponse{}, nil
 }
 
-func (ns *nodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
+func (ns *NodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
 	logger := klog.FromContext(ctx)
 	logger.V(6).Info("NodeUnpublishVolume: called", "args", *req)
 
@@ -463,7 +463,7 @@ func (ns *nodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpu
 	return &csi.NodeUnpublishVolumeResponse{}, nil
 }
 
-func (ns *nodeServer) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
+func (ns *NodeServer) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoRequest) (*csi.NodeGetInfoResponse, error) {
 	logger := klog.FromContext(ctx)
 	logger.V(6).Info("NodeGetInfo: called", "args", *req)
 
@@ -491,7 +491,7 @@ func (ns *nodeServer) NodeGetInfo(ctx context.Context, req *csi.NodeGetInfoReque
 	}, nil
 }
 
-func (ns *nodeServer) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolumeRequest) (*csi.NodeExpandVolumeResponse, error) {
+func (ns *NodeServer) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandVolumeRequest) (*csi.NodeExpandVolumeResponse, error) {
 	logger := klog.FromContext(ctx)
 	logger.V(6).Info("NodeExpandVolume: called", "args", *req)
 
@@ -581,7 +581,7 @@ func (ns *nodeServer) NodeExpandVolume(ctx context.Context, req *csi.NodeExpandV
 	return &csi.NodeExpandVolumeResponse{CapacityBytes: bcap}, nil
 }
 
-func (ns *nodeServer) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeStatsRequest) (*csi.NodeGetVolumeStatsResponse, error) {
+func (ns *NodeServer) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVolumeStatsRequest) (*csi.NodeGetVolumeStatsResponse, error) {
 	logger := klog.FromContext(ctx)
 	logger.V(6).Info("NodeGetVolumeStats: called", "args", *req)
 
@@ -652,7 +652,7 @@ func (ns *nodeServer) NodeGetVolumeStats(ctx context.Context, req *csi.NodeGetVo
 	}, nil
 }
 
-func (ns *nodeServer) NodeGetCapabilities(_ context.Context, _ *csi.NodeGetCapabilitiesRequest) (*csi.NodeGetCapabilitiesResponse, error) {
+func (ns *NodeServer) NodeGetCapabilities(_ context.Context, _ *csi.NodeGetCapabilitiesRequest) (*csi.NodeGetCapabilitiesResponse, error) {
 	resp := &csi.NodeGetCapabilitiesResponse{
 		Capabilities: []*csi.NodeServiceCapability{
 			{

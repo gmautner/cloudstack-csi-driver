@@ -24,10 +24,10 @@ var onlyVolumeCapAccessMode = csi.VolumeCapability_AccessMode{
 	Mode: csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER,
 }
 
-type controllerServer struct {
+type ControllerServer struct {
 	csi.UnimplementedControllerServer
 	// connector is the CloudStack client interface
-	connector cloud.Interface
+	connector cloud.Cloud
 
 	// A map storing all volumes with ongoing operations so that additional operations
 	// for that same volume (as defined by VolumeID/volume name) return an Aborted error
@@ -38,15 +38,15 @@ type controllerServer struct {
 }
 
 // NewControllerServer creates a new Controller gRPC server.
-func NewControllerServer(connector cloud.Interface) csi.ControllerServer {
-	return &controllerServer{
+func NewControllerServer(connector cloud.Cloud) *ControllerServer {
+	return &ControllerServer{
 		connector:      connector,
 		volumeLocks:    util.NewVolumeLocks(),
 		operationLocks: util.NewOperationLock(),
 	}
 }
 
-func (cs *controllerServer) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
+func (cs *ControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 	logger := klog.FromContext(ctx)
 	logger.V(6).Info("CreateVolume: called", "args", *req)
 
@@ -228,7 +228,7 @@ func determineSize(req *csi.CreateVolumeRequest) (int64, error) {
 	return sizeInGB, nil
 }
 
-func (cs *controllerServer) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
+func (cs *ControllerServer) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
 	logger := klog.FromContext(ctx)
 	logger.V(6).Info("DeleteVolume: called", "args", *req)
 
@@ -265,7 +265,7 @@ func (cs *controllerServer) DeleteVolume(ctx context.Context, req *csi.DeleteVol
 	return &csi.DeleteVolumeResponse{}, nil
 }
 
-func (cs *controllerServer) ControllerPublishVolume(ctx context.Context, req *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
+func (cs *ControllerServer) ControllerPublishVolume(ctx context.Context, req *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
 	logger := klog.FromContext(ctx)
 	logger.V(6).Info("ControllerPublishVolume: called", "args", *req)
 
@@ -359,7 +359,7 @@ func (cs *controllerServer) ControllerPublishVolume(ctx context.Context, req *cs
 	return &csi.ControllerPublishVolumeResponse{PublishContext: publishContext}, nil
 }
 
-func (cs *controllerServer) ControllerUnpublishVolume(ctx context.Context, req *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {
+func (cs *ControllerServer) ControllerUnpublishVolume(ctx context.Context, req *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {
 	logger := klog.FromContext(ctx)
 	logger.V(6).Info("ControllerUnpublishVolume: called", "args", *req)
 
@@ -416,7 +416,7 @@ func (cs *controllerServer) ControllerUnpublishVolume(ctx context.Context, req *
 	return &csi.ControllerUnpublishVolumeResponse{}, nil
 }
 
-func (cs *controllerServer) ValidateVolumeCapabilities(ctx context.Context, req *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
+func (cs *ControllerServer) ValidateVolumeCapabilities(ctx context.Context, req *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
 	logger := klog.FromContext(ctx)
 	logger.V(6).Info("ValidateVolumeCapabilities: called", "args", *req)
 
@@ -460,7 +460,7 @@ func isValidVolumeCapabilities(volCaps []*csi.VolumeCapability) bool {
 	return true
 }
 
-func (cs *controllerServer) ControllerExpandVolume(ctx context.Context, req *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
+func (cs *ControllerServer) ControllerExpandVolume(ctx context.Context, req *csi.ControllerExpandVolumeRequest) (*csi.ControllerExpandVolumeResponse, error) {
 	logger := klog.FromContext(ctx)
 	logger.V(6).Info("ControllerExpandVolume: called", "args", protosanitizer.StripSecrets(*req))
 
@@ -530,7 +530,7 @@ func (cs *controllerServer) ControllerExpandVolume(ctx context.Context, req *csi
 	}, nil
 }
 
-func (cs *controllerServer) ControllerGetCapabilities(ctx context.Context, req *csi.ControllerGetCapabilitiesRequest) (*csi.ControllerGetCapabilitiesResponse, error) {
+func (cs *ControllerServer) ControllerGetCapabilities(ctx context.Context, req *csi.ControllerGetCapabilitiesRequest) (*csi.ControllerGetCapabilitiesResponse, error) {
 	logger := klog.FromContext(ctx)
 	logger.V(6).Info("ControllerGetCapabilities: called", "args", protosanitizer.StripSecrets(*req))
 

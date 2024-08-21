@@ -23,14 +23,14 @@ type Interface interface {
 	Run(ctx context.Context) error
 }
 
-type cloudstackDriver struct {
-	controller csi.ControllerServer
-	node       csi.NodeServer
+type Driver struct {
+	controller *ControllerServer
+	node       *NodeServer
 	options    *Options
 }
 
 // New instantiates a new CloudStack CSI driver.
-func New(ctx context.Context, csConnector cloud.Interface, options *Options, mounter mount.Interface) (Interface, error) {
+func New(ctx context.Context, csConnector cloud.Cloud, options *Options, mounter mount.Interface) (*Driver, error) {
 	logger := klog.FromContext(ctx)
 	logger.Info("Driver starting", "Driver", DriverName, "Version", driverVersion)
 
@@ -38,7 +38,7 @@ func New(ctx context.Context, csConnector cloud.Interface, options *Options, mou
 		return nil, fmt.Errorf("invalid driver options: %w", err)
 	}
 
-	driver := &cloudstackDriver{
+	driver := &Driver{
 		options: options,
 	}
 
@@ -57,7 +57,7 @@ func New(ctx context.Context, csConnector cloud.Interface, options *Options, mou
 	return driver, nil
 }
 
-func (cs *cloudstackDriver) Run(ctx context.Context) error {
+func (cs *Driver) Run(ctx context.Context) error {
 	logger := klog.FromContext(ctx)
 	scheme, addr, err := util.ParseEndpoint(cs.options.Endpoint)
 	if err != nil {
