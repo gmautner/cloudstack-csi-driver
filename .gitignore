@@ -1,6 +1,11 @@
-/bin
+bin
 /test/e2e/e2e.test
 /test/e2e/ginkgo
 cloud-config
 /vendor
 
+# Editor and IDE paraphernalia
+.idea
+*.swp
+*.swo
+*~
